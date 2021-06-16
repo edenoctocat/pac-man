@@ -1,45 +1,48 @@
 import os
 from time import sleep
-# import curses
-# import keyboard
 import getch
 import sys
+import random
 
 class Field:
 	def __init__(self, width, height):
 		self.width = width
 		self.height = height
-		self.field = [['. ' for i in range(self.width)] for i in range(self.height)]
+		self.score = 0
+		self.field = []
 		self.generate_maze()
 
 	def generate_maze(self):
-		pass # self.field
+		f = open('maze.txt', 'r')
+		for y in range(20):
+			line = f.readline()
+			line_list = []
+			for x in range(0, len(line), 2):
+				line_list.append(line[x:x+2])
+			self.field.append(line_list)
+		f.close()
 
-	def clear(self):
-		self.field = [['. ' for i in range(self.width)] for i in range(self.height)]
-		self.screen = list(self.field)
-
-	def render(self, pacman_location):
-		self.clear()
-		x = pacman_location[0]
-		y = pacman_location[1]
-		self.screen[x][y] = 'O '
-		print(self.field)
-		print(self.screen)
+	def render(self, pacman_position, pacman_prev_position):
+		if self.field[pacman_position[0]][pacman_position[1]] == '. ':
+			self.score += 10 
+		self.field[pacman_prev_position[0]][pacman_prev_position[1]] = '  '
+		self.field[pacman_position[0]][pacman_position[1]] = 'O '
 
 	def display(self):
-		print('\n'.join([''.join(row) for row in self.screen]))
+		print('score:', self.score)
+		print(''.join([''.join(row) for row in self.field]))
 
 class Pacman:
-	def __init__(self, field):
-		self.position = [0, 0]
+	def __init__(self, maze):
+		self.position = [15, 7]
+		self.prev_position = [15, 7]
 		self.direction = 'd'
-		self.field = field
+		self.maze = maze
 
-	def check_position(self, location):
-		if location[0] > 9 or location[1] > 9 or location[0] < 0 or location[1] < 0:
+	def check_position(self, position):
+		if position[0] > 19 or position[1] > 14 or position[0] < 0 or position[1] < 0:
 			return False
-		elif self.field[location[0]][location[1]] == '_ ' or self.field[location[0]][location[1]] == '| ':
+		elif self.maze[position[0]][position[1]] == '__' or self.maze[position[0]][position[1]] == '| ' or self.maze[position[0]][position[1]] == '|-' or self.maze[position[0]][position[1]] == '- ' or self.maze[position[0]][position[1]] == '--' or self.maze[position[0]][position[1]] == '|_' or self.maze[position[0]][position[1]] == ' _' or self.maze[position[0]][position[1]] == '_ ':
 			return False
 		else:
 			return True
@@ -48,21 +51,21 @@ class Pacman:
 		self.direction = key
 
 	def move(self):
-		new_position = list(self.position)
+		self.prev_position = list(self.position)
     
 		if self.direction == 'w':
-			new_position[0] -= 1
+			self.position[0] -= 1
 		elif self.direction == 's':
-			new_position[0] += 1
+			self.position[0] += 1
 		elif self.direction == 'a':
-			new_position[1] -= 1
+			self.position[1] -= 1
 		elif self.direction == 'd':
-			new_position[1] += 1
+			self.position[1] += 1
     
-		if self.check_position(new_position):
-			self.position = list(new_position)
-		else:
+		if self.check_position(self.position):
 			pass
+		else:
+			self.position = list(self.prev_position)
 
 class Ghost:
 	def __init__(self):
@@ -80,15 +83,13 @@ def main():
 	f.close()
 
 	os.system('clear')
-	field = Field(15, 20)
+	field = Field(15, 19)
 	pacman = Pacman(field.field)
-	field.render(pacman.position)
+	field.render(pacman.position, pacman.prev_position)
 	field.display()
 
-	# keyboard.add_hotkey('up', lambda: pacman.set_direction('up'))
-	# keyboard.add_hotkey('down', lambda: pacman.set_direction('down'))
-	# keyboard.add_hotkey('left', lambda: pacman.set_direction('left'))
-	# keyboard.add_hotkey('right', lambda: pacman.set_direction('right'))
+	print('\npress w to move up. press s to move down. press a to move left. press d to move right. press q to quit.')
+	print('press any key to continue')
 
 	ch = getch.getch()
 
@@ -96,9 +97,9 @@ def main():
 		os.system('clear')
 		pacman.set_direction(ch)
 		pacman.move()
-		field.render(pacman.position)
+		field.render(pacman.position, pacman.prev_position)
 		field.display()
 		ch = getch.getch()
-		sleep(.3)
+		sleep(.2)
 
 main()
